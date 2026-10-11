@@ -56,8 +56,8 @@ up guild grants an administrator has approved (`docs/issue-role.md`). Local
 d1 migrations apply vcrypto-extras --local`.
 
 `npm run build` is the same build as a dry run (`wrangler deploy --dry-run`) —
-what CI runs. This `wrangler deploy` is the **first** one; after it, a deploy
-is a release, and a tag is what starts one — see [Releases](#releases).
+what CI runs. This `wrangler deploy` is the **first** one; after it the
+repository deploys itself — see [Releases](#releases).
 
 ## 3. Register with virtualCrypto
 
@@ -138,29 +138,36 @@ again after adding a feature's commands.
 
 ## Releases
 
-A deploy is a **tag**: pushing `v*` starts
-[`.github/workflows/release.yml`](../.github/workflows/release.yml), which runs
-the gates (`npm run check`), applies the D1 migrations, deploys the worker, and
-registers the commands with Discord — a bulk overwrite, so what Discord ends up
-with is what the tag defines. `git tag v0.1.0 && git push origin v0.1.0` is a
-release; `workflow_dispatch` is the same run by hand.
+A deploy is a **push to `main`**, and Cloudflare is what does it. The worker is
+connected to this repository under **Settings → Builds**, and Workers Builds
+runs, on every push to the production branch:
 
-It needs three repository secrets and one variable:
+1. the build command — `npm ci && npm run check`, the same gates a pull request
+   passes;
+2. the deploy command — the migrations, the deploy, and the command
+   registration:
+
+```sh
+npx wrangler d1 migrations apply vcrypto-extras --remote && npx wrangler deploy && node scripts/register-commands.ts
+```
+
+Both are fields on the worker's **Settings → Builds**, and the deploy command
+reads two build-time values, set on the same page:
 
 | Where | What |
 | --- | --- |
-| `CLOUDFLARE_API_TOKEN` (secret) | a Cloudflare API token that may edit Workers and D1 — the "Edit Cloudflare Workers" template is the one |
-| `CLOUDFLARE_ACCOUNT_ID` (secret) | the account the worker and its database live in |
-| `DISCORD_BOT_TOKEN` (secret) | the bot token; the same value step 2 holds as the worker's own secret |
-| `DISCORD_APPLICATION_ID` (variable) | the application id — public, it is in every command's answer |
+| `DISCORD_BOT_TOKEN` (build secret) | so the release can register the commands with Discord |
+| `DISCORD_APPLICATION_ID` (build variable) | the application those commands belong to |
 
-The worker's own secrets are **not** the release's to set: `wrangler secret
-put` is a one-time move (step 2), and a release that rewrote a secret from a
-GitHub value that had gone missing would take the running worker down with it.
+The token the build deploys with is one Cloudflare generates; its default
+permissions cover Workers scripts but **not D1**, which the migrations step
+needs — add **D1: Edit** to it under **My Profile → API Tokens**.
 
-The first release on a fresh account fails at the migrations step until
-`wrangler d1 create vcrypto-extras` has happened and the id it answers with is
-in `wrangler.jsonc` — that is the honest place for it to fail.
+Two things worth knowing: the build uses the Wrangler version in
+`package.json`, and the free plan allows 3,000 build minutes a month. A
+**Deploy Hook** (Settings → Builds → Deploy Hooks) is a URL that starts the
+same build by POST — for the day the build should start from something other
+than a push.
 
 ## Local development
 

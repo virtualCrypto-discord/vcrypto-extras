@@ -1,8 +1,9 @@
 name: ci
 
+# Pull requests, not `main`: a push to `main` is a deploy, and the deploy runs
+# these same checks itself (Workers Builds — docs/operations.md, Releases), so
+# this is the gate that stands in front of the merge rather than behind it.
 on:
-  push:
-    branches: [main]
   pull_request:
   workflow_dispatch:
 

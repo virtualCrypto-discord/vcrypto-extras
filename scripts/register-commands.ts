@@ -6,11 +6,16 @@
  * commands are global and Discord may take up to an hour to show them; with a
  * guild id they are that guild's immediately, which is what development wants.
  *
+ * Values come from the environment or from `.env` (which `.gitignore` holds):
+ *
  *   DISCORD_BOT_TOKEN=… DISCORD_APPLICATION_ID=… \
  *     node scripts/register-commands.ts [--guild <guild id>]
  */
 
 import { commandDefinitions } from "../src/features/index.ts";
+import { loadEnvFile } from "./load-env.ts";
+
+loadEnvFile();
 
 function requireEnv(name: string): string {
   const value = process.env[name];

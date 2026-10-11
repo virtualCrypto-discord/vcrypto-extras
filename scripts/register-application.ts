@@ -12,6 +12,8 @@
  * `--attach-webhook` attaches it afterwards, once the deployed worker knows its
  * public key — which is also how a webhook is later moved or replaced.
  *
+ * Values come from the environment or from `.env` (which `.gitignore` holds):
+ *
  *   # 1. once — the PAT is made in Discord with the core bot's `/pat create name:`
  *   VC_PAT=… VCRYPTO_BASE_URL=… node scripts/register-application.ts
  *   #    → prints client_id, client_secret and public_key; set them (see README) and deploy
@@ -23,6 +25,10 @@
  *
  * `--dry-run` prints the registration body instead of sending it.
  */
+
+import { loadEnvFile } from "./load-env.ts";
+
+loadEnvFile();
 
 const baseUrl = requireEnv("VCRYPTO_BASE_URL").replace(/\/+$/, "");
 const attachWebhook = process.argv.includes("--attach-webhook");

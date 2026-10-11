@@ -2,4 +2,7 @@ node_modules/
 dist/
 .wrangler/
 .dev.vars
+# The operators' scripts read their values from the environment; this is where
+# a checkout keeps them, and a PAT in it is nobody's to see.
+.env
 *.log

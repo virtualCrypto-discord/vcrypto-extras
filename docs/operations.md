@@ -54,7 +54,8 @@ up guild grants an administrator has approved (`docs/issue-role.md`). Local
 d1 migrations apply vcrypto-extras --local`.
 
 `npm run build` is the same build as a dry run (`wrangler deploy --dry-run`) —
-what CI runs.
+what CI runs. This `wrangler deploy` is the **first** one; after it, a deploy
+is a release, and a tag is what starts one — see [Releases](#releases).
 
 ## 3. Register with virtualCrypto
 
@@ -80,7 +81,9 @@ VC_PAT=<the token> VCRYPTO_BASE_URL=https://<the service> \
 ```
 
 It registers the application and prints the three values. (`--dry-run` prints
-the body instead of sending it.) Put them in place:
+the body instead of sending it.) **The scripts read `.env` when there is
+one** — which `.gitignore` holds — so `VC_PAT` and the service's address can
+live there instead of on the command line. Put the answers in place:
 
 - `wrangler.jsonc`: `VCRYPTO_CLIENT_ID`, `VCRYPTO_PUBLIC_KEY`
 - `wrangler secret put VCRYPTO_CLIENT_SECRET`
@@ -130,6 +133,32 @@ DISCORD_BOT_TOKEN=<token> DISCORD_APPLICATION_ID=<id> \
 
 A bulk overwrite: what the tree defines is what Discord ends up with. Run it
 again after adding a feature's commands.
+
+## Releases
+
+A deploy is a **tag**: pushing `v*` starts
+[`.github/workflows/release.yml`](../.github/workflows/release.yml), which runs
+the gates (`npm run check`), applies the D1 migrations, deploys the worker, and
+registers the commands with Discord — a bulk overwrite, so what Discord ends up
+with is what the tag defines. `git tag v0.1.0 && git push origin v0.1.0` is a
+release; `workflow_dispatch` is the same run by hand.
+
+It needs three repository secrets and one variable:
+
+| Where | What |
+| --- | --- |
+| `CLOUDFLARE_API_TOKEN` (secret) | a Cloudflare API token that may edit Workers and D1 — the "Edit Cloudflare Workers" template is the one |
+| `CLOUDFLARE_ACCOUNT_ID` (secret) | the account the worker and its database live in |
+| `DISCORD_BOT_TOKEN` (secret) | the bot token; the same value step 2 holds as the worker's own secret |
+| `DISCORD_APPLICATION_ID` (variable) | the application id — public, it is in every command's answer |
+
+The worker's own secrets are **not** the release's to set: `wrangler secret
+put` is a one-time move (step 2), and a release that rewrote a secret from a
+GitHub value that had gone missing would take the running worker down with it.
+
+The first release fails at the migrations step until the D1 database exists and
+its real id is in `wrangler.jsonc` — the zeroes there are a placeholder, and
+that is the honest place for it to fail.
 
 ## Local development
 

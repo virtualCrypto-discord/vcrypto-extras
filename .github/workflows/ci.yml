@@ -1,0 +1,29 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+
+      # `npm ci` rather than `npm install`: the lockfile is the input, and an
+      # install that resolves something else is a build that is not the one the
+      # lockfile describes.
+      - run: npm ci
+
+      # lint, both typechecks (the worker and the scripts), the tests inside
+      # workerd, and the worker's own build — `wrangler deploy --dry-run`,
+      # which needs no account and still uploads nothing.
+      - run: npm run check

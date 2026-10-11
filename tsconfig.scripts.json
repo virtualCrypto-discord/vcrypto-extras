@@ -1,0 +1,24 @@
+{
+  // The one-shot scripts run under Node (`node scripts/...ts`), not in the
+  // worker, so they are checked against Node's types. They import from `src/`,
+  // which is why every module there stays runnable by Node's type stripping:
+  // explicit `.ts` extensions, and `erasableSyntaxOnly` in force both here and
+  // in the worker's own config.
+  "compilerOptions": {
+    "target": "es2022",
+    "lib": ["es2022"],
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "types": ["node"],
+
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+
+    "verbatimModuleSyntax": true,
+    "erasableSyntaxOnly": true,
+    "allowImportingTsExtensions": true,
+    "noEmit": true,
+    "skipLibCheck": true
+  },
+  "include": ["scripts"]
+}

@@ -1,0 +1,19 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "vcrypto-extras",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-01",
+  "observability": {
+    "enabled": true
+  },
+  // The public half of the configuration, checked into the repository. The two
+  // secrets beside it are `wrangler secret put` values: VCRYPTO_CLIENT_SECRET
+  // and DISCORD_BOT_TOKEN. See docs/operations.md.
+  "vars": {
+    "VCRYPTO_BASE_URL": "https://virtualcrypto.example",
+    "VCRYPTO_CLIENT_ID": "",
+    "VCRYPTO_PUBLIC_KEY": "",
+    "DISCORD_APPLICATION_ID": "",
+    "DISCORD_PUBLIC_KEY": ""
+  }
+}

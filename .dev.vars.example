@@ -1,0 +1,13 @@
+# Local values for `wrangler dev`: copy to `.dev.vars` (git-ignored) and fill in.
+#
+# The two secrets:
+VCRYPTO_CLIENT_SECRET=
+DISCORD_BOT_TOKEN=
+#
+# And the vars, when local dev should point at something other than
+# wrangler.jsonc's placeholder:
+VCRYPTO_BASE_URL=https://virtualcrypto.example
+VCRYPTO_CLIENT_ID=
+VCRYPTO_PUBLIC_KEY=
+DISCORD_APPLICATION_ID=
+DISCORD_PUBLIC_KEY=

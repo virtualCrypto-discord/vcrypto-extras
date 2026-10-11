@@ -1,0 +1,149 @@
+# Operations: Discord application, deployment, registration
+
+Node 24, a Cloudflare account, and — for the registration step — a virtualCrypto
+account that may run the core bot's `/pat create` (the operator's own is fine).
+
+## 1. The Discord application
+
+In the [Discord Developer Portal](https://discord.com/developers/applications),
+create an application and turn it into a bot. Three values come from here:
+
+| From | Where it goes |
+| --- | --- |
+| **Application ID** (General Information) | `DISCORD_APPLICATION_ID` — a var in `wrangler.jsonc` |
+| **Public Key** (General Information) | `DISCORD_PUBLIC_KEY` — a var |
+| **Bot token** (Bot → Reset Token) | `DISCORD_BOT_TOKEN` — a secret |
+
+A Discord application is also created with **Interaction Endpoint URL** empty,
+which is where the worker's first URL goes once it is deployed:
+
+```
+https://<worker host>/discord/interactions
+```
+
+Discord PINGs that URL when it is saved; the endpoint answers PING before it
+does anything else, so a PING that verifies is the whole of the acceptance.
+
+Invite the bot where it should work — `applications.commands` is the scope
+commands need, and a bot the features DM needs no guild at all.
+
+## 2. Configure and deploy
+
+The public values live in `wrangler.jsonc`'s `vars`; the two secrets are
+`wrangler secret put`:
+
+```sh
+wrangler secret put DISCORD_BOT_TOKEN
+wrangler secret put VCRYPTO_CLIENT_SECRET      # after step 3
+wrangler deploy
+```
+
+`npm run build` is the same build as a dry run (`wrangler deploy --dry-run`) —
+what CI runs.
+
+## 3. Register with virtualCrypto
+
+Registration is two steps, because the handshake a webhook URL triggers needs
+this application's public key to already be deployed — and the public key is
+what registration produces (the whole reason is in
+[architecture.md](architecture.md#the-handshake-and-why-registration-is-two-steps)).
+
+**Make a PAT, in Discord**, with the core bot:
+
+```
+/pat create name:vcrypto-extras
+```
+
+It is shown once, and it is what the next command authenticates with. The PAT
+never goes near the worker.
+
+### 3a. Register, without a webhook
+
+```sh
+VC_PAT=<the token> VCRYPTO_BASE_URL=https://<the service> \
+  node scripts/register-application.ts
+```
+
+It registers the application and prints the three values. (`--dry-run` prints
+the body instead of sending it.) Put them in place:
+
+- `wrangler.jsonc`: `VCRYPTO_CLIENT_ID`, `VCRYPTO_PUBLIC_KEY`
+- `wrangler secret put VCRYPTO_CLIENT_SECRET`
+
+and deploy:
+
+```sh
+wrangler deploy
+```
+
+### 3b. Attach the webhook — this is where the handshake runs
+
+```sh
+VCRYPTO_BASE_URL=https://<the service> \
+VCRYPTO_CLIENT_ID=<the client id> \
+VCRYPTO_CLIENT_SECRET=<the secret> \
+  node scripts/register-application.ts --attach-webhook \
+  --webhook-url https://<worker host>/vc/webhook
+```
+
+This PATCHes the webhook URL in, and the service verifies it in the same
+request. A success means the two PINGs passed; a refusal says whose failure it
+was:
+
+- `webhook_verification_failed` — the URL answered wrongly, or did not answer:
+  check that the worker is deployed at that URL with the right
+  `VCRYPTO_PUBLIC_KEY`, and that nothing in front of it rewrites the body.
+- `server_error` — the service could not reach its own delivery proxy. Not
+  this application's problem; try again later.
+
+The handshake is rate-limited per application (once per 3 seconds, 20 per hour,
+50 per day), so a retry storm answers `rate_limit_exceeded` with a
+`Retry-After`.
+
+Re-running the same command is also how the webhook is **moved**: a PATCH whose
+URL differs from the stored one runs the handshake again, with the key the
+application already has.
+
+## 4. Register the commands
+
+```sh
+DISCORD_BOT_TOKEN=<token> DISCORD_APPLICATION_ID=<id> \
+  node scripts/register-commands.ts            # global — Discord may take an hour
+DISCORD_BOT_TOKEN=<token> DISCORD_APPLICATION_ID=<id> \
+  node scripts/register-commands.ts --guild <guild id>   # that guild, immediately
+```
+
+A bulk overwrite: what the tree defines is what Discord ends up with. Run it
+again after adding a feature's commands.
+
+## Local development
+
+`.dev.vars` (git-ignored; copy `.dev.vars.example`) carries local values —
+a development Discord application's keys, and either the staging service or a
+local one. `npm run dev` starts `wrangler dev` on `http://localhost:8787`;
+Discord needs a public https URL, which a tunnel provides:
+
+```sh
+cloudflared tunnel --url http://localhost:8787
+```
+
+Point the development Discord application's Interaction Endpoint URL at the
+tunnel, and register that application as its own virtualCrypto application
+(step 3) so its webhook is the tunnel too. Two environments should be two
+registrations and two configurations; nothing is shared.
+
+## Rotating and checking
+
+- **Bot token**: reset it in the portal, then `wrangler secret put
+  DISCORD_BOT_TOKEN` and deploy.
+- **Client secret**: the core bot's application screens (`/application`) can
+  rotate it (`client_secret: true` in a PATCH); afterwards update
+  `VCRYPTO_CLIENT_SECRET` and deploy. The old secret stops authenticating
+  immediately.
+- **Whether the webhook is alive**: the service re-checks every webhook about
+  once a week and records it. `GET /oauth2/clients/@me` answers
+  `webhook_verified_at` / `webhook_failed_at`; `null` means "not checked since
+  registration", which is every application until the job first reaches it. A
+  failing webhook is *recorded, not disabled* — deliveries keep coming, which
+  is why a feature's handler must treat a delivery it cannot use as something
+  to log rather than to assume away.

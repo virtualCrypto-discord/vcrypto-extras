@@ -3,7 +3,7 @@ import {
   type CommandDefinition,
   commandJson,
 } from "../discord/commands.ts";
-import { typeNotFound } from "../discord/responses.ts";
+import { reply, typeNotFound } from "../discord/responses.ts";
 import type { Interaction } from "../discord/types.ts";
 import type { VcEvent } from "../vc/types.ts";
 import type { FeatureContext } from "./context.ts";
@@ -29,9 +29,21 @@ export const features: readonly Feature[] = [issueRole];
 
 // ---- The registry ----------------------------------------------------------
 
+/**
+ * `/help` — the registry describing itself, which is why it is here and not in
+ * `builtinCommands`: all it needs is the list below, and the list Discord is
+ * registered with is the one it prints, so the two cannot go stale apart.
+ */
+const helpCommand: CommandDefinition = {
+  name: "help",
+  description: "このBotのコマンド一覧を表示します。",
+  handle: () => reply(helpText()),
+};
+
 const commands = new Map<string, CommandDefinition>();
 for (const command of [
   ...builtinCommands,
+  helpCommand,
   ...features.flatMap((feature) => [...(feature.commands ?? [])]),
 ]) {
   if (commands.has(command.name)) {
@@ -41,6 +53,19 @@ for (const command of [
     throw new Error(`duplicate command: ${command.name}`);
   }
   commands.set(command.name, command);
+}
+
+function helpText(): string {
+  const list = [...commands.values()].sort((a, b) =>
+    a.name.localeCompare(b.name),
+  );
+  return [
+    "📖 **vcrypto-extras** — VirtualCryptoで一括操作などを行えるようにするBotです。",
+    "",
+    ...list.map((command) => `\`/${command.name}\` — ${command.description}`),
+    "",
+    "送金や契約の承認など、通貨そのものの操作はVirtualCryptoのコマンドで行います。",
+  ].join("\n");
 }
 
 /** Every command to register with Discord — the built-ins', then the features'. */

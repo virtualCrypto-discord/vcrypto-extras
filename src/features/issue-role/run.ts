@@ -442,7 +442,7 @@ export class IssueRun {
         if (error instanceof VcApiError && error.status === 404) {
           await this.stop(
             state,
-            "このサーバーにはまだ通貨がありません（コアBotの `/create` で作れます）",
+            "このサーバーにはまだ通貨がありません（VirtualCryptoの `/create` で作れます）",
           );
           return;
         }
@@ -776,7 +776,7 @@ export class IssueRun {
     );
     return [
       "⏳ 発行権限の承認待ちです（1回だけです）。",
-      `コアBotで \`/grant approve code:${state.userCode}\` を実行してください（残り約${remaining}秒）。`,
+      `VirtualCryptoで \`/grant approve code:${state.userCode}\` を実行してください（残り約${remaining}秒）。`,
       "承認を検知すると、自動で発行を続けます。実行し直す必要はありません。",
       `対象: ${state.total}人（合計 ${state.totalAmount} ${state.unit}）`,
     ].join("\n");

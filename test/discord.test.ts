@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Env } from "../src/env.ts";
+import { commandDefinitions } from "../src/features/index.ts";
 import { handleDiscordInteractions } from "../src/routes/discord.ts";
 import { testEnv } from "./env.ts";
 import { generateTestKey, type TestKey } from "./keys.ts";
@@ -87,6 +88,28 @@ describe("the Discord door", () => {
       type: 4,
       data: { content: "pong" },
     });
+  });
+
+  it("answers /help with every command the registry holds", async () => {
+    const key = await generateTestKey();
+    const response = await handleDiscordInteractions(
+      await signed(key, { type: 2, data: { name: "help" } }),
+      envWith(key.publicHex),
+    );
+
+    expect(response.status).toBe(200);
+    const body = (await response.json()) as {
+      type: number;
+      data: { content: string };
+    };
+    expect(body.type).toBe(4);
+    // The list is the registry's own, so it cannot miss a command that exists
+    // or name one that does not.
+    for (const command of commandDefinitions()) {
+      expect(body.data.content).toContain(`\`/${command.name}\``);
+      expect(body.data.content).toContain(command.description);
+    }
+    expect(body.data.content).toContain("VirtualCrypto");
   });
 
   it("answers an unregistered command as one it cannot place", async () => {

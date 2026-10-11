@@ -22,7 +22,7 @@ a bot of this kind needs, and stops there.
 | **virtualCrypto door** | `POST /vc/webhook` — deliveries are verified with the application's own public key; the handshake's PING is answered `{"type": 1}`, and `type: 2/3/4` events are handed to features. |
 | **virtualCrypto client** | application tokens (`client_credentials`, cached per isolate, renewed on `401`), contracts (create, read, charge, statement), the device flow for guild issuance, and the bounded waits the service asks for (`429 Retry-After`, `409 processing`). |
 | **Discord client** | what a feature needs outside an interaction: a DM channel and a message. |
-| **Feature registry** | where a feature adds commands, components and event handlers — `src/features/index.ts`, described in [docs/features.md](docs/features.md). |
+| **Feature registry** | where a feature adds commands, components and event handlers — `src/features/index.ts`, described in [docs/features.md](docs/features.md). `/help` prints what the registry holds, from the registry itself. |
 | **`/issue-role`** | the first feature: a **settings screen** where a guild picks the roles (several at once) and **an amount for each** — the union is paid once per member, each holder receiving the sum of their roles' amounts — then a live progress screen — 更新 and 再開 — and a run that continues by itself: rate limits are waited out, an approval is noticed, a hiccup is retried, a stop is resumed by the button. The permission is asked for once (an administrator approves with the core bot) and remembered in D1. Manual: [docs/issue-role.md](docs/issue-role.md). |
 | **Tooling** | `scripts/register-application.ts` (registers the application with virtualCrypto, PAT in hand) and `scripts/register-commands.ts` (Discord's bulk overwrite). |
 

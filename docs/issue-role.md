@@ -135,7 +135,7 @@ The first run in a guild cannot issue anything, because the bot has no
 permission there yet. It asks for one and puts the code on the screen:
 
 > ⏳ 発行権限の承認待ちです（1回だけです）。
-> コアBotで `/grant approve code:ABCD-1234` を実行してください（残り約600秒）。
+> VirtualCryptoで `/grant approve code:ABCD-1234` を実行してください（残り約600秒）。
 > 承認を検知すると、自動で発行を続けます。実行し直す必要はありません。
 > 対象: 12人 × 10 = 120 nyan
 

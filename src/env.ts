@@ -25,4 +25,12 @@ export interface Env {
   DISCORD_PUBLIC_KEY: string;
   /** The bot token, for the REST calls a feature makes outside an interaction. */
   DISCORD_BOT_TOKEN: string;
+  /** The guild grants and device-flow asks a guild-side feature needs. */
+  DB: D1Database;
+  /**
+   * The runs of `/issue-role`, one Durable Object per invocation (`IssueRun`,
+   * `src/features/issue-role/run.ts`): progress, resumption across evictions,
+   * and a single writer per run.
+   */
+  ISSUE_RUNS: DurableObjectNamespace;
 }

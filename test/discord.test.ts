@@ -1,20 +1,13 @@
 import { describe, expect, it } from "vitest";
 import type { Env } from "../src/env.ts";
 import { handleDiscordInteractions } from "../src/routes/discord.ts";
+import { testEnv } from "./env.ts";
 import { generateTestKey, type TestKey } from "./keys.ts";
 
 const BASE = "https://vcrypto-extras.test";
 
 function envWith(discordPublicKey: string): Env {
-  return {
-    VCRYPTO_BASE_URL: "https://vc.test",
-    VCRYPTO_CLIENT_ID: "the-client",
-    VCRYPTO_CLIENT_SECRET: "the-secret",
-    VCRYPTO_PUBLIC_KEY: "",
-    DISCORD_APPLICATION_ID: "1",
-    DISCORD_PUBLIC_KEY: discordPublicKey,
-    DISCORD_BOT_TOKEN: "",
-  };
+  return testEnv({ DISCORD_PUBLIC_KEY: discordPublicKey });
 }
 
 /** A request signed the way Discord signs one: over `timestamp <> body`. */

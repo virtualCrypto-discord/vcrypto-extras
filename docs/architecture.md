@@ -91,9 +91,11 @@ The client can do exactly what an application may:
 - **`payContract`** — spend what the contract holds. The amount is the only
   thing the application decides; the scope (`vc.contract`) says it may ask,
   the parties' approvals are what let it spend.
-- **`requestGuildGrant` / `pollGuildGrant` / `issueFromPool`** — the guild
-  side, which exists for features that distribute from a pool rather than move
-  a user's money.
+- **`requestGuildGrant` / `pollGuildGrant` / `refreshGuildToken` /
+  `issueFromPool`** — the guild side: the device-flow ask an administrator
+  answers once, the token pair that answer produces (renewed from its rotating
+  refresh token), and issuances from the pool. It is the machinery a feature
+  uses when it distributes rather than moves a user's money.
 
 Two habits are built into the client because the service expects them:
 
@@ -111,23 +113,40 @@ Two habits are built into the client because the service expects them:
 
 ## State
 
-Nothing in the scaffold persists anything, and the token cache is in memory on
-purpose (an isolate's cache is a cache; a few extra token calls are the cost).
-A feature that needs state — a subscription's period, a game's round — chooses
-for itself: KV for small key-value bookkeeping, D1 for relational rows,
-Durable Objects when the state needs a single writer and an alarm. Whatever it
-chooses, the money's source of truth stays the contract in virtualCrypto; the
-feature's rows are bookkeeping *about* it and must be reconstructible from the
-API and the webhook.
+Three things are kept, and all of them are small:
+
+- **Application tokens** live in a module-scope cache per isolate. An isolate's
+  cache is a cache; a few extra token calls are the cost, and correctness is
+  nowhere's.
+- **Guild grants** live in D1 (`migrations/0001_guild_grants.sql`,
+  `src/vc/guild-grant.ts`). This was the first feature's need — a permission an
+  administrator approves once has to outlive the request that asked for it —
+  and its shape is the one to copy: one row per guild, overwritten in place,
+  nothing that is a ledger, and the rotating refresh token written down when it
+  rotates.
+- **A run** lives in a Durable Object (`src/features/issue-role/run.ts`), one
+  per invocation, with its progress and its alarm. This is where long work
+  goes: a Worker answers within seconds and `waitUntil` buys it a few more, so
+  anything longer than that — a distribution of any size, a wait for an
+  approval, a rate limit to sit out — is a state machine with a clock, and a
+  Durable Object is exactly that. One object per run is also the single writer
+  for "who has been paid", which is what keeps two ticks of the same run from
+  disagreeing.
+
+A feature that needs its own rows chooses its own store (KV, D1, or a Durable
+Object), and keeps the same rule: the money's source of truth stays inside
+virtualCrypto, and the feature's rows must be reconstructible from the API, the
+deliveries, and the clock.
 
 ## The map
 
 | | |
 | --- | --- |
-| `src/index.ts` | the router: `/discord/interactions`, `/vc/webhook`, `/health` |
+| `src/index.ts` | the router (`/discord/interactions`, `/vc/webhook`, `/health`), the scheduled handler that polls pending guild grants, and the `IssueRun` export the runtime finds the run class through |
 | `src/routes/` | the two doors: verify, parse, dispatch |
-| `src/discord/` | Discord's signature verification, response builders, interaction types, and the bot REST client (DM channel, message) |
-| `src/vc/` | the virtualCrypto client, delivery verification, the wire types |
-| `src/features/` | the `Feature` interface, the registry, and the context each handler is handed (`env`, `vc`, `discord`, `waitUntil`) |
+| `src/discord/` | Discord's signature verification, response builders, interaction types, and the bot REST client (DM, message, member list) |
+| `src/vc/` | the virtualCrypto client, the guild-grant store and device flow, delivery verification, the wire types |
+| `src/features/` | the `Feature` interface, the registry, the context each handler is handed (`env`, `vc`, `discord`, `waitUntil`) — and the features themselves: `issue-role/` (its command, its member scan, and `run.ts`, the Durable Object a run lives in) |
+| `migrations/` | D1 migrations, applied per deployment, per local dev, and per test run |
 | `scripts/` | one-shot operators' scripts, run by Node 24 (which runs the TypeScript directly) |
 | `test/` | the suite: inside workerd, against scripted services and generated Ed25519 keys |

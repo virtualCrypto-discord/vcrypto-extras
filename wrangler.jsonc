@@ -15,5 +15,40 @@
     "VCRYPTO_PUBLIC_KEY": "",
     "DISCORD_APPLICATION_ID": "",
     "DISCORD_PUBLIC_KEY": ""
-  }
+  },
+  // The guild tokens a guild-side feature issues with, and the device-flow asks
+  // that produce them (`src/vc/guild-grant.ts`). `wrangler d1 create
+  // vcrypto-extras` writes the real id, which replaces the placeholder below;
+  // local development and the tests use their own copy of the directory.
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "vcrypto-extras",
+      "database_id": "00000000-0000-0000-0000-000000000000"
+    }
+  ],
+  "triggers": {
+    // Once a minute: pick up the grants administrators have approved since the
+    // last tick, so a command run after the approval finds a token instead of
+    // an ask it would have to poll itself.
+    "crons": ["* * * * *"]
+  },
+  // One Durable Object per `/issue-role` run: the run's own state, its own
+  // alarm, and a single writer for "who has been paid" — which is what lets a
+  // distribution show progress and continue by itself (docs/issue-role.md).
+  // SQLite-backed, which is what the free plan deploys.
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "ISSUE_RUNS",
+        "class_name": "IssueRun"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": ["IssueRun"]
+    }
+  ]
 }

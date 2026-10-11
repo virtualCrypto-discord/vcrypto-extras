@@ -49,7 +49,36 @@ contracts, the device flow), a `discord` client (DM channel, message), and
   kept must stay reconstructible from the API and the webhook.
 - **Descriptions are in Japanese**, the way the core bot's commands are.
 
-## The first candidate: renewal
+## What is here: `issue-role`
+
+The first feature is `/issue-role`: the guild's pool pays everyone who carries
+a role. [docs/issue-role.md](issue-role.md) is its manual; the parts worth
+knowing when writing the next one:
+
+- **The screen is the interface.** `/issue-role` takes nothing it can ask for
+  better on a panel: a role multi-select, an amount per role (one modal, opened
+  from a select that names the role), a 実行 button, and a progress screen
+  whose buttons stay live across the fifteen-minute interaction-token window
+  because every press hands the run a fresh token to edit through. A feature
+  with settings and a long-running job wants the same shape.
+- **The grant is where a guild-side feature starts.** A guild's pool is spent
+  with a guild token, the device flow asks for it, an administrator approves
+  once, and `src/vc/guild-grant.ts` keeps the pair (D1, `guild_grants`) and
+  renews it. A pending ask is harvested by the Cron Trigger (`scheduled` in
+  `src/index.ts`), so no feature has to poll.
+- **A run names itself, and its screen carries the verbs.** Every issuance is
+  keyed by the run's own id (`issue-role:<runId>:<member>`), and resuming is a
+  button on the progress screen (再開) rather than a name a person has to
+  remember and reuse. A feature with a "run" wants the same pair: an identity
+  it made for itself, and an explicit affordance over it.
+- **A run is a Durable Object with an alarm.** `waitUntil` buys a Worker thirty
+  seconds at most, so long work is handed to `IssueRun` (one object per run):
+  it works in bounded ticks, re-arms itself, waits rate limits out on the
+  clock, retries hiccups, and keeps a progress screen — the interaction's own
+  message — edited as it goes. The interaction token's fifteen minutes are the
+  screen's lifetime, not the run's; the report falls back to a DM.
+
+## The next candidate: renewal
 
 The core records it as *"the first thing anybody asks a metered application
 for"* (`docs/renewal.md` there). What stands today is a contract per period and
@@ -71,12 +100,11 @@ tedium around it without touching the property:
    for `not_enough_amount` ends the subscription's run, and the record says
    why.
 
-What it needs that the scaffold does not have yet: a **store** for
-subscriptions (who, which unit, how much per period, how long a period,
-which contract is current) and a **clock** — a Cron Trigger (`scheduled` in
-`src/index.ts`) or a Durable Object alarm — to decide when the next proposal
-is due. A Durable Object per subscription gets both (state + alarm) and a
-single writer for the decision; D1 + cron is the flatter alternative. Either
+What it needs that is not here yet: a **store** for subscriptions (who, which
+unit, how much per period, how long a period, which contract is current) — the
+`issue-role` precedent is D1 + a migration — and a **clock** to decide when the
+next proposal is due: the Cron Trigger `src/index.ts` already takes, or a
+Durable Object alarm per subscription, the way `IssueRun` drives a run. Either
 way, the write that matters goes through a contract, and the subscriber's
 approval is what makes it real.
 
@@ -85,11 +113,11 @@ approval is what makes it real.
 - **Pay-per-use anything** — the shape `vc-demo-app`'s `demo-billing` already
   shows from outside: one contract, drawn down a charge at a time. A feature
   here would be the Discord front door for exactly that.
-- **Guild-side rewards** — distributions from a guild's pool, which is the
-  device-flow half of the client: the ask, the administrator's approval with
-  `/grant approve`, and a guild token that issues. Useful where a guild wants
-  to pay role holders, event winners, or voters without an administrator
-  typing `/issue` for each one.
+- **Guild-side rewards** — the device-flow half, which `/issue-role` is now the
+  working example of: the ask, the administrator's approval with `/grant
+  approve`, a stored token pair, and issuances from the pool. Event winners,
+  voters, or a different rule for who is paid are variations on the same
+  machinery.
 - **Screens the core does not have** — the core's own answer to management
   UIs is "every operation is one a command can do"; a feature is free to make
   a different, extra screen out of the API, as long as it does not become the

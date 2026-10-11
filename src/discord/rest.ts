@@ -49,6 +49,56 @@ export class DiscordRest {
     return this.call("POST", `/channels/${channelId}/messages`, message);
   }
 
+  /**
+   * Replace the message a deferred interaction is showing. The one edit a run
+   * gets, because the interaction's follow-up window is the run's whole
+   * lifetime.
+   */
+  async editOriginalInteractionResponse(
+    applicationId: string,
+    interactionToken: string,
+    message: { content?: string; embeds?: unknown[]; components?: unknown[] },
+  ): Promise<unknown> {
+    return this.call(
+      "PATCH",
+      `/webhooks/${applicationId}/${interactionToken}/messages/@original`,
+      message,
+    );
+  }
+
+  /**
+   * The guild's roles, in Discord's own order — what a role gets called on a
+   * screen, since a select menu's labels do not render mentions.
+   */
+  async guildRoles(guildId: string): Promise<{ id: string; name: string }[]> {
+    return (await this.call("GET", `/guilds/${guildId}/roles`)) as {
+      id: string;
+      name: string;
+    }[];
+  }
+
+  /** The guild, with its approximate member count — the size a member scan is refused past. */
+  async guild(guildId: string): Promise<{ approximate_member_count?: number }> {
+    return (await this.call("GET", `/guilds/${guildId}?with_counts=true`)) as {
+      approximate_member_count?: number;
+    };
+  }
+
+  /**
+   * One page of the guild's members, in Discord's order. Discord caps a page at
+   * a thousand, and the `GUILD_MEMBERS` privileged intent is what makes the
+   * call legal at all — a bot without it is answered `403`, which the caller is
+   * expected to explain rather than retry.
+   */
+  async guildMemberPage(guildId: string, after?: string): Promise<unknown[]> {
+    const query =
+      after === undefined ? "?limit=1000" : `?limit=1000&after=${after}`;
+    return (await this.call(
+      "GET",
+      `/guilds/${guildId}/members${query}`,
+    )) as unknown[];
+  }
+
   private async call(
     method: string,
     path: string,

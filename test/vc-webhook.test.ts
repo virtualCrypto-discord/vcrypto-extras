@@ -1,20 +1,13 @@
 import { describe, expect, it } from "vitest";
 import type { Env } from "../src/env.ts";
 import { handleVcWebhook } from "../src/routes/vc.ts";
+import { testEnv } from "./env.ts";
 import { generateTestKey, type TestKey } from "./keys.ts";
 
 const BASE = "https://vcrypto-extras.test";
 
 function envWith(vcryptoPublicKey: string): Env {
-  return {
-    VCRYPTO_BASE_URL: "https://vc.test",
-    VCRYPTO_CLIENT_ID: "the-client",
-    VCRYPTO_CLIENT_SECRET: "the-secret",
-    VCRYPTO_PUBLIC_KEY: vcryptoPublicKey,
-    DISCORD_APPLICATION_ID: "1",
-    DISCORD_PUBLIC_KEY: "",
-    DISCORD_BOT_TOKEN: "",
-  };
+  return testEnv({ VCRYPTO_PUBLIC_KEY: vcryptoPublicKey });
 }
 
 /** A delivery signed the way virtualCrypto signs one: over `timestamp <> body`. */

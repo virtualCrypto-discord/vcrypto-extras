@@ -47,3 +47,31 @@ export function deferred(options: { ephemeral?: boolean } = {}): Response {
     },
   });
 }
+
+/**
+ * Open a modal — the answer to the button that asks for a value. The payload
+ * is the modal's own JSON, built where the state it is pre-filled from lives.
+ */
+export function openModal(modal: unknown): Response {
+  return Response.json({ type: 9, data: modal });
+}
+
+/**
+ * Replace the message a component is attached to — what a button press answers
+ * with. `components: []` clears the buttons; omitting them leaves whatever was
+ * there, which is why the difference is the caller's to make.
+ */
+export function updateMessage(
+  content: string,
+  options: { components?: unknown[] } = {},
+): Response {
+  return Response.json({
+    type: 7,
+    data: {
+      content,
+      ...(options.components === undefined
+        ? {}
+        : { components: options.components }),
+    },
+  });
+}

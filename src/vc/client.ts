@@ -303,6 +303,33 @@ export class VcClient {
   }
 
   /**
+   * Renew a guild token with its refresh token.
+   *
+   * No Basic auth: the refresh grant is the one exchange the service reads
+   * without the application's credentials, because the refresh token is itself
+   * the credential. The answer's `refresh_token` replaces the one sent — the
+   * rotation is the thing a storer has to write down, and it is what makes a
+   * dead token the only path back to a new ask.
+   */
+  async refreshGuildToken(refreshToken: string): Promise<TokenResponse> {
+    const response = await fetch(`${this.baseUrl}/oauth2/token`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/x-www-form-urlencoded",
+        accept: "application/json",
+      },
+      body: new URLSearchParams({
+        grant_type: "refresh_token",
+        refresh_token: refreshToken,
+      }).toString(),
+    });
+    if (!response.ok) {
+      throw await vcErrorFrom(response);
+    }
+    return (await response.json()) as TokenResponse;
+  }
+
+  /**
    * Issue from the guild's pool, with the guild token the poll answered.
    *
    * This moves the guild's money and nobody has to approve each issuance — the

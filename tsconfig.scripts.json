@@ -9,7 +9,11 @@
     "lib": ["es2022"],
     "module": "nodenext",
     "moduleResolution": "nodenext",
-    "types": ["node"],
+    // Both sets, because the scripts' import graph reaches into `src/`, whose
+    // shared modules name Cloudflare globals in their signatures (`DB:
+    // D1Database`). The scripts' own code is still Node's — that is what it
+    // runs on — and the two sets coexist in this program without a clash.
+    "types": ["node", "@cloudflare/workers-types"],
 
     "strict": true,
     "noUncheckedIndexedAccess": true,

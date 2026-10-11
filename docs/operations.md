@@ -27,16 +27,31 @@ does anything else, so a PING that verifies is the whole of the acceptance.
 Invite the bot where it should work — `applications.commands` is the scope
 commands need, and a bot the features DM needs no guild at all.
 
+**SERVER MEMBERS INTENT** (Bot → Privileged Gateway Intents) should be on: it
+is what lets `/issue-role` read a guild's member list, and Discord refuses the
+read without it. A guild where the bot is not a member is refused the same way
+— the invite is the other half.
+
 ## 2. Configure and deploy
 
 The public values live in `wrangler.jsonc`'s `vars`; the two secrets are
-`wrangler secret put`:
+`wrangler secret put`, and the database is one D1 below them:
 
 ```sh
 wrangler secret put DISCORD_BOT_TOKEN
 wrangler secret put VCRYPTO_CLIENT_SECRET      # after step 3
+
+# the database: once, and again whenever a migration is added
+wrangler d1 create vcrypto-extras              # paste the id it answers with into wrangler.jsonc
+wrangler d1 migrations apply vcrypto-extras --remote
+
 wrangler deploy
 ```
+
+The Cron Trigger in `wrangler.jsonc` deploys with the worker; it is what picks
+up guild grants an administrator has approved (`docs/issue-role.md`). Local
+`wrangler dev` uses a database of its own — give it the schema with `wrangler
+d1 migrations apply vcrypto-extras --local`.
 
 `npm run build` is the same build as a dry run (`wrangler deploy --dry-run`) —
 what CI runs.

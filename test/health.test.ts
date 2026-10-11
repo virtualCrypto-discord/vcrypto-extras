@@ -1,18 +1,10 @@
 import { describe, expect, it } from "vitest";
-import type { Env } from "../src/env.ts";
 import worker from "../src/index.ts";
+import { testEnv } from "./env.ts";
 
-// The router reads nothing from the environment on these paths, so the test
-// hands it the emptiest one there is.
-const env: Env = {
-  VCRYPTO_BASE_URL: "https://vc.test",
-  VCRYPTO_CLIENT_ID: "",
-  VCRYPTO_CLIENT_SECRET: "",
-  VCRYPTO_PUBLIC_KEY: "",
-  DISCORD_APPLICATION_ID: "",
-  DISCORD_PUBLIC_KEY: "",
-  DISCORD_BOT_TOKEN: "",
-};
+// The router reads nothing from the environment on these paths, but the test
+// hands it the same one every other test uses.
+const env = testEnv();
 
 const ctx = {
   waitUntil() {},

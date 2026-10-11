@@ -16,13 +16,19 @@ export interface TokenResponse {
   scopes?: string[];
 }
 
-/** A currency, read by exactly one of `id` / `guild` / `name` / `unit`. */
+/**
+ * A currency, read by exactly one of `id` / `guild` / `name` / `unit`.
+ *
+ * `pool_amount` is what a guild may still issue from, and **an empty pool
+ * travels as `""`** rather than as zero; `name` and `unit` can be null, because
+ * the service leaves them optional.
+ */
 export interface Currency {
-  id: string;
-  unit: string;
-  guild_id?: string;
-  /** The pool the guild may still issue from; an empty pool travels as `""`. */
-  pool_amount?: string | null;
+  total_amount: string;
+  name: string | null;
+  unit: string | null;
+  guild: string;
+  pool_amount: string;
 }
 
 /** What a device-flow ask (`POST /oauth2/clients/@me/grant-requests`) answers. */

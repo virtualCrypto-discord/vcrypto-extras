@@ -156,9 +156,9 @@ The worker's own secrets are **not** the release's to set: `wrangler secret
 put` is a one-time move (step 2), and a release that rewrote a secret from a
 GitHub value that had gone missing would take the running worker down with it.
 
-The first release fails at the migrations step until the D1 database exists and
-its real id is in `wrangler.jsonc` — the zeroes there are a placeholder, and
-that is the honest place for it to fail.
+The first release on a fresh account fails at the migrations step until
+`wrangler d1 create vcrypto-extras` has happened and the id it answers with is
+in `wrangler.jsonc` — that is the honest place for it to fail.
 
 ## Local development
 

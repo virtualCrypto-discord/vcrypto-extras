@@ -10,21 +10,20 @@
   // secrets beside it are `wrangler secret put` values: VCRYPTO_CLIENT_SECRET
   // and DISCORD_BOT_TOKEN. See docs/operations.md.
   "vars": {
-    "VCRYPTO_BASE_URL": "https://virtualcrypto.example",
-    "VCRYPTO_CLIENT_ID": "",
-    "VCRYPTO_PUBLIC_KEY": "",
-    "DISCORD_APPLICATION_ID": "",
-    "DISCORD_PUBLIC_KEY": ""
+    "VCRYPTO_BASE_URL": "https://vcrypto.sumidora.com",
+    "VCRYPTO_CLIENT_ID": "6fd1ad91-0b92-434a-9b6a-51fbb0e0a7ec",
+    "VCRYPTO_PUBLIC_KEY": "a0983bcf39bfc3c87e263771974bb53aa0f01b0d9cddee2a56db7a998340da65",
+    "DISCORD_APPLICATION_ID": "1558852595223756842",
+    "DISCORD_PUBLIC_KEY": "6e619c5d706d8cf24a3a9a2cdbead77d509efc8a40944d3fe6ff34bed1ed757e"
   },
   // The guild tokens a guild-side feature issues with, and the device-flow asks
-  // that produce them (`src/vc/guild-grant.ts`). `wrangler d1 create
-  // vcrypto-extras` writes the real id, which replaces the placeholder below;
-  // local development and the tests use their own copy of the directory.
+  // that produce them (`src/vc/guild-grant.ts`). Local development and the
+  // tests use their own copy of the directory.
   "d1_databases": [
     {
       "binding": "DB",
       "database_name": "vcrypto-extras",
-      "database_id": "00000000-0000-0000-0000-000000000000"
+      "database_id": "b6c2b56a-dd57-4912-90fd-5bf0b35e1fa9"
     }
   ],
   "triggers": {

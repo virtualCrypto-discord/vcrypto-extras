@@ -21,8 +21,10 @@ which is where the worker's first URL goes once it is deployed:
 https://<worker host>/discord/interactions
 ```
 
-Discord PINGs that URL when it is saved; the endpoint answers PING before it
-does anything else, so a PING that verifies is the whole of the acceptance.
+Discord PINGs that URL when it is saved — twice: first with a signature it
+knows is wrong, where a 401 is the pass, and then for real, where a 200 is. A
+save that sticks therefore means the worker is answering Discord. (`wrangler
+tail` shows both.)
 
 Invite the bot where it should work — `applications.commands` is the scope
 commands need, and a bot the features DM needs no guild at all.
